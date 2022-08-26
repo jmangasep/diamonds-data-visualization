@@ -8,8 +8,9 @@ output: pdf_document
 ```{r setup, include=FALSE}
 # Load dependencies
 library(tidyverse) # 1.3.1
-library(ggsci)     # 2.9
-library(statar)    # 0.7.3
+library(ggsci) # 2.9
+library(statar) # 0.7.3
+library(kableExtra, lib.loc = "/Library/Frameworks/R.framework/Versions/3.6/Resources/library") # 1.3.1
 ```
 
 ## Document Overview
@@ -89,19 +90,29 @@ ggplot(diamonds_carat_reduced) +
 
 The most diamonds in the data appear to have around 0.3 carats. However, there are various, albeit smaller, peaks at other `carat` values (e.g., at 0.5 carats, ~0.7 carats, 1.0 carats, etc.). This does not fit with my expectations, as I expected this to be a smoother distribution, specifically a right-skewed distribution like with the variable `price`. Considering the strong concentration around *lower* prices (meaning from \$500 to \$1,000 dollars), this is a surprising find as there are variations within different ranges of carat values.
 
-To better understand the nature of this distribution, I look into a sample of the peaks: carats 0.5, 1.0, 1.5, and 2.0. 
+To better understand this distribution, I look into a sample of the peaks 0.5, 1.0, 1.5, and 2.0 within the entire `diamonds` data set (not winsorized), which I refer to as the "carat peaks". Specifically, I compare the frequency of diamonds at each peak and the frequency of diamonds at the carat value immediately before each peak (meaning 0.49, 0.99, etc.) to informally test whether sellers round up diamonds' carat values to increase prices.
 
 ```{r investigatecarat, echo=FALSE}
-# Make tibble of sampled peak values and add column that subtracts 0.01
-carat_peaks_sample <- tibble(peak = c(0.5, 1, 1.5, 2)) %>%
-  mutate(before_peak = peak - 0.01)
-carat_peaks_sample %>% 
-  map(~ diamonds_carat_reduced %>% 
-        summarise(before_peak = sum(carat_winsorized == (. - 0.01)),
-                  peak = sum(carat_winsorized == .))
-      )
+# Make function that summarizes the diamonds data based on given carat values
+sum_carats <- function(carat_vector) {
+  diamonds %>% 
+    filter(carat %in% carat_vector) %>%
+    count(carat, name = "Frequency")
+}
+
+# Create vector of sampled peak carat values
+carat_peaks <- c(0.5, 1, 1.5, 2)
+
+# Print summary tibble for carat peaks
+kable(sum_carats(carat_peaks), caption = "Diamonds per Carat Peak") %>%
+  kable_styling(latex_options = "HOLD_position")
+
+# Print summary tibble for carats immediately before (0.01 carats) each peak
+kable(sum_carats(carat_peaks - 0.01), caption = "Diamonds per Carat Immediately Before Peak") %>%
+  kable_styling(latex_options = "HOLD_position")
 ```
 
 
+From the tables above, it appears that significantly less diamonds have an "un-rounded" listed carat value. For example,, only 23 diamonds are 0.99 carats, but 1,558 diamonds are 1 carat! This discrepancy may come from diamond sellers rounding up the carat to sell diamonds for a greater profit. I create the plot below to support this argument, finding the relationship between `price` and `carat`, as higher carats meaning higher prices would justify my hypothesis.
 
 
