@@ -11,3 +11,34 @@ library(tidyverse) # 1.3.1
 library(ggsci)     # 2.9
 ```
 
+## Document Overview
+
+For context, this R Markdown file revisits the work I previously did for my UChicago Harris Class "Data & Programming in R I." All work and outputs are my own and are simply guided by the questions from the assignment. This document aims to explore both variation and covariation in the `diamonds` data set, which is built-in from the `ggplot2` package within `tidyverse` and contains information on `r nrow(diamonds)` diamonds.
+
+## Exploring Data Variation
+
+To begin with, I examine the distribution of the `price` variable within `diamonds` through a histogram. Before doing so, I expected the distribution to be concentrated around the lower dollar prices. As a note, the maximum price in the data is rather extreme at `r max(diamonds$price)` dollars.
+
+```{r pricevariation, fig.height=3, fig.width=5, echo=FALSE}
+# Plot the variation of price with a histogram
+ggplot(diamonds) +
+  
+  # Change the binwidth from the default 30 to 10 in order to look more closely
+  ## at the data.
+  geom_histogram(aes(x = price), binwidth = 10) +
+  
+  # Implement manually-calculated breaks for the x-axis tick marks, ensuring
+  ## they're in intervals of $1,000.
+  scale_x_continuous(breaks = seq(0, max(diamonds$price), 1000)) +
+  theme(text = element_text(family = "serif")) +
+  labs(
+    title = "Most Diamonds are Priced Between $500 to $1,000",
+    x     = "Price",
+    y     = "Frequency"
+    )
+```
+
+
+
+
+
