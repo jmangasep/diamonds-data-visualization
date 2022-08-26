@@ -5,10 +5,11 @@ date: '2022-08-26'
 output: pdf_document
 ---
 
-```{r setup}
+```{r setup, include=FALSE}
 # Load dependencies
 library(tidyverse) # 1.3.1
 library(ggsci)     # 2.9
+library(statar)    # 0.7.3
 ```
 
 ## Document Overview
@@ -17,9 +18,11 @@ For context, this R Markdown file revisits the work I previously did for my UChi
 
 ## Exploring Data Variation
 
+### Price
+
 To begin with, I examine the distribution of the `price` variable within `diamonds` through a histogram. Before doing so, I expected the distribution to be concentrated around the lower dollar prices. As a note, the maximum price in the data is rather extreme at `r max(diamonds$price)` dollars.
 
-```{r pricevariation, fig.height=3, fig.width=5, echo=FALSE}
+```{r pricevariation, echo=FALSE}
 # Plot the variation of price with a histogram
 ggplot(diamonds) +
   
@@ -29,15 +32,75 @@ ggplot(diamonds) +
   
   # Implement manually-calculated breaks for the x-axis tick marks, ensuring
   ## they're in intervals of $1,000.
-  scale_x_continuous(breaks = seq(0, max(diamonds$price), 1000)) +
-  theme(text = element_text(family = "serif")) +
+  scale_x_continuous(
+    breaks = seq(0, max(diamonds$price), 1000),
+    labels = scales::dollar,
+    minor_breaks = NULL
+    ) +
+  
+  # Final touches (theme edits and informative labels)
+  theme(
+    text        = element_text(family = "serif"),
+    plot.title  = element_text(hjust = 0.5, face = "bold"),
+    axis.text.x = element_text(angle = 45, vjust = 0.85)
+    ) +
   labs(
-    title = "Most Diamonds are Priced Between $500 to $1,000",
+    title = "Most diamonds are priced between $500 and $1,000",
     x     = "Price",
     y     = "Frequency"
     )
 ```
 
+From the histogram above, there are a couple of things to note. First, most observations in `diamonds` have a `price` value between ~500 to ~1,000 dollars (i.e. it is *right-skewed*), and this aligns with my expectations. Also, there is a noticeable lack of observations around the 1,500 dollar mark, which is highly unusual as this is the only clear break in the distribution. 
+
+### Carat
+
+For the `carat` variable, I expect most of the observations to be concentrated around the lower values. This is because the previous exploration on `price` found most observations to be priced between 500 to 1,000 dollars. Therefore, assuming diamonds' prices are associated with their carats, most diamonds in the data are likely to have lower carats. 
+
+Though my predictions for `carat` are similar to those for `price`, it is important to note that the possible values are very different between the two variables. While the latter ranges from `r min(diamonds$price)` dollars to `r max(diamonds$price)`, the former has a much smaller range of `r min(diamonds$carat)` carats to `r max(diamonds$carat)` carats. Therefore, I take precautions for proper scaling by winsorizing this variable (i.e., replacing carat outliers with specified quantiles). Please see [this documentation page](https://rdrr.io/cran/statar/man/winsorize.html) for more information on the `winsorize()` function from `statar`.
+
+```{r caratvariation, echo=FALSE, message=FALSE}
+# Create an updated column where the extreme values for carat are removed
+diamonds_carat_reduced <- diamonds %>%
+  mutate(carat_winsorized = statar::winsorise(carat, probs = c(0.01, 0.99)))
+
+# Plot carats with winsorized values
+ggplot(diamonds_carat_reduced) +
+  
+  # Reduce the binwidth size to look more closely at the distribution
+  geom_histogram(aes(x = carat_winsorized), binwidth = 0.01) +
+  
+  # Implement manually-calculated breaks of 0.25 carats for the x-axis tick labels
+  scale_x_continuous(breaks = seq(0.25, max(diamonds_carat_reduced$carat_winsorized), 0.25)) +
+  
+  # Final touches (theme edits and informative labels)
+  theme(
+    plot.title    = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(face = "italic", hjust = 0.5),
+    text          = element_text(family = "serif")
+    ) +
+  labs(
+    title    = "Most diamonds have around 0.3 carats, but there are multiple peaks in distribution",
+    subtitle = "Carat values in data were winsorized by the 1st and 99th percentiles",
+    x        = "Carat",
+    y        = "Frequency"
+    )
+```
+
+The most diamonds in the data appear to have around 0.3 carats. However, there are various, albeit smaller, peaks at other `carat` values (e.g., at 0.5 carats, ~0.7 carats, 1.0 carats, etc.). This does not fit with my expectations, as I expected this to be a smoother distribution, specifically a right-skewed distribution like with the variable `price`. Considering the strong concentration around *lower* prices (meaning from \$500 to \$1,000 dollars), this is a surprising find as there are variations within different ranges of carat values.
+
+To better understand the nature of this distribution, I look into a sample of the peaks: carats 0.5, 1.0, 1.5, and 2.0. 
+
+```{r investigatecarat, echo=FALSE}
+# Make tibble of sampled peak values and add column that subtracts 0.01
+carat_peaks_sample <- tibble(peak = c(0.5, 1, 1.5, 2)) %>%
+  mutate(before_peak = peak - 0.01)
+carat_peaks_sample %>% 
+  map(~ diamonds_carat_reduced %>% 
+        summarise(before_peak = sum(carat_winsorized == (. - 0.01)),
+                  peak = sum(carat_winsorized == .))
+      )
+```
 
 
 
