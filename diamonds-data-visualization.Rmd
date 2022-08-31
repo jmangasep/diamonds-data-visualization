@@ -229,7 +229,7 @@ ggplot(diamonds, aes(x = cut, y = carat)) +
     text       = element_text(family = "serif")
     ) +
   labs(
-    title = "On average, fair diamonds have the most carats despite being the worst cut",
+    title = "Fair-cut diamonds have the most carats despite being the worst cut",
     x     = "Cut",
     y     = "Carat"
     )
@@ -242,8 +242,3 @@ As seen above, the continuous `carat` variable is correlated with the categorica
 The table is misleading as it omits the crucial variable of `carat`. It implies that "poorer" cut diamonds (e.g. Fair) are actually more expensive than the best cut diamonds (e.g. Ideal). However, this table fails to show that it is *not* the cut that determines `price`. Rather, it is `carat` that determines `price`, and the diamonds in the data happen to have fair-cut diamonds with large carat values. 
 
 This is likely due to the fact that `cut` is related to aesthetics (i.e., brilliance and reflection), but an ideal cut does *not* beget a high carat value. Therefore, the table is misleading due to its omission of the crucial `carat` value for a diamond's price.
-
-
-
-
-
