@@ -74,6 +74,9 @@ ggplot(diamonds_carat_reduced) +
   # Implement manually-calculated breaks of 0.25 carats for the x-axis tick labels
   scale_x_continuous(breaks = seq(0.25, max(diamonds_carat_reduced$carat_winsorized), 0.25)) +
   
+  # Include commas for y-axis values
+  scale_y_continuous(labels = scales::comma) +
+  
   # Final touches (theme edits and informative labels)
   theme(
     plot.title    = element_text(face = "bold", hjust = 0.5),
@@ -112,7 +115,40 @@ kable(sum_carats(carat_peaks - 0.01), caption = "Diamonds per Carat Immediately 
   kable_styling(latex_options = "HOLD_position")
 ```
 
+From the tables above, it appears that significantly less diamonds have an "un-rounded" listed carat value. For example, only 23 diamonds are 0.99 carats, but 1,558 diamonds are 1 carat! Again, this discrepancy may come from diamond sellers rounding up the carat to sell diamonds for a greater profit. To investigate this further, I create the plot below to examine the relationship between `price` and `carat`
 
-From the tables above, it appears that significantly less diamonds have an "un-rounded" listed carat value. For example,, only 23 diamonds are 0.99 carats, but 1,558 diamonds are 1 carat! This discrepancy may come from diamond sellers rounding up the carat to sell diamonds for a greater profit. I create the plot below to support this argument, finding the relationship between `price` and `carat`, as higher carats meaning higher prices would justify my hypothesis.
+```{r pricecaratplot, echo=FALSE}
+# Plot carat (winsorized) against price
+ggplot(diamonds_carat_reduced, aes(x = carat_winsorized, y = price)) +
+  
+  # Plot smoothed line graph without region of standard error
+  geom_smooth(se = FALSE, color = "black", size = 0.5) +
+  
+  # Show y-axis with dollar sign labels for style
+  scale_y_continuous(labels = scales::dollar) +
+  
+  # Remove x-axis lines for style
+  theme(
+    panel.grid.major.x = element_blank(), 
+    panel.grid.minor.x = element_blank()
+    ) +
+  
+  # Final touches (theme edits and informative labels)
+  theme(
+    plot.title    = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(face = "italic", hjust = 0.5),
+    text          = element_text(family = "serif")
+    ) +
+  labs(
+    title    = "Diamonds with higher carats are associated with higher prices",
+    subtitle = "Carat values in data were winsorized by the 1st and 99th percentiles",
+    x        = "Carat",
+    y        = "Price"
+    )
+```
+
+From the plot above, it is apparent that there is a positive relationship between diamonds' carats and their listed prices. Therefore, it is reasonable to assume that diamond sellers would be incentivized to claim that a diamond is of higher carat than it is. This explains the dramatic peaks seen in the previous graph at rounded numbers. 
+
+
 
 
