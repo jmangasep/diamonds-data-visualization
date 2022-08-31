@@ -150,5 +150,100 @@ ggplot(diamonds_carat_reduced, aes(x = carat_winsorized, y = price)) +
 From the plot above, it is apparent that there is a positive relationship between diamonds' carats and their listed prices. Therefore, it is reasonable to assume that diamond sellers would be incentivized to claim that a diamond is of higher carat than it is. This explains the dramatic peaks seen in the previous graph at rounded numbers. 
 
 
+## Exploring Data Covariation
+
+After covering variation within the variables `price` and `carat`, I now look into covariation in the data. Upon examining the mean prices associated with each diamond `cut` value (see table below), the assignment implored us to find the most important variable for predicting diamond price in the data set.
+
+```{r cutpricestable, echo=FALSE}
+kable(
+  diamonds %>% 
+    group_by(cut) %>% 
+    summarise("Mean Price" = scales::dollar(mean(price))), 
+  caption = "Average Diamond Price per Cut Type"
+  ) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+
+Fair-cut diamonds had the *second-highest* mean price in the data, despite fair being the worst `cut` value for a diamond. This signals omitted-variable bias, so I look into all other candidate predictors for `price` aside from this variable.
+
+With `geom_smooth()`, I plot `price` with the following NUMERIC variables: `carat`, length `x`, width `y`, and depth `z`. I look at these numeric variables as there is a wide range of values in `price` (as seen from the histogram on price variation), so using a categorical variable like `color` or `clarity` will *not* be useful for prediction.
+
+```{r mostimportantpricepredictor, echo=FALSE}
+# Pivot diamonds data longer based on numeric variables in order to plot them
+## at the same time on different graphs.
+diamonds_longer <- diamonds_carat_reduced %>%
+  pivot_longer(
+    cols      = c(carat_winsorized, x, y, z), 
+    names_to  = "numeric_spec", 
+    values_to = "value"
+    )
+
+# Plot longer diamonds data
+ggplot(diamonds_longer, aes(x = value, y = price)) +
+  
+  # Plot smooth line graph without SE region and with the different 
+  ## variables in different colors. 
+  geom_smooth(se = FALSE, aes(color = numeric_spec)) +
+  
+  # Change aesthetics of graph for style preferences
+  scale_color_uchicago(palette = "default") +
+  scale_y_continuous(labels = scales::dollar) +
+  
+  # Edit basic thematic elements and add labels
+  theme(
+    plot.title      = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle   = element_text(face = "italic", hjust = 0.5),
+    plot.caption = element_text(face = "italic", hjust = 0),
+    text            = element_text(family = "serif"),
+    legend.position = "none",
+    ) +
+  labs(
+    title    = "Only carat* holds a significant relationship to the price of a diamond",
+    subtitle = "Length (x), width (y), and depth (z) each have an unclear relationship with price",
+    caption  = "*Carat winsorized by 1st and 99th percentiles",
+    x        = "Numeric Detail of Diamond",
+    y        = "Price"
+    ) +
+  
+  # Create separate graphs for each numeric variable
+  facet_wrap(vars(numeric_spec), scales = "free") +
+  
+  # Final thematic element edits
+  theme(
+    strip.text = element_text(face = "bold"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+    )
+```
+
+From the graphs above, it is apparent that the `carat` of a diamond is the *most* reliable predictor for diamond price. No measurements of the diamond have a clear relationship with diamond price, so I consider width, depth, and length of a diamond as poor predictors. Knowing the significance of the `carat` variable, I look into its relationship with `cut`, as suggested by the assignment.
+
+```{r pricecutcovariation, echo=FALSE}
+# Use a box-plot to see the co-variation between carat and cut
+ggplot(diamonds, aes(x = cut, y = carat)) +
+  geom_boxplot() +
+  coord_flip() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    text       = element_text(family = "serif")
+    ) +
+  labs(
+    title = "On average, fair diamonds have the most carats despite being the worst cut",
+    x     = "Cut",
+    y     = "Carat"
+    )
+```
+
+As seen above, the continuous `carat` variable is correlated with the categorical variable `cut` variable in that *fair* cuts have the *highest* carat values while *ideal* cuts have the *lowest*. Fair-cut diamonds have the highest median carat (1) out of the cut types, AND they have the most variation in *extreme* carat values (i.e. 3 or more carats). Other than premium cut diamonds (which have the second-highest median carat value), it seems that the "better" the cut, the LOWER the carat value. 
+
+**Final Thoughts on the Table of Average Diamond Prices per Cut**
+
+The table is misleading as it omits the crucial variable of `carat`. It implies that "poorer" cut diamonds (e.g. Fair) are actually more expensive than the best cut diamonds (e.g. Ideal). However, this table fails to show that it is *not* the cut that determines `price`. Rather, it is `carat` that determines `price`, and the diamonds in the data happen to have fair-cut diamonds with large carat values. 
+
+This is likely due to the fact that `cut` is related to aesthetics (i.e., brilliance and reflection), but an ideal cut does *not* beget a high carat value. Therefore, the table is misleading due to its omission of the crucial `carat` value for a diamond's price.
+
+
+
 
 
